@@ -88,3 +88,74 @@ class DepthVisitor(Visitor):
         ## folha também conta como profundidade
         self.max_depth = max(self.max_depth, self.current_depth + 1)
 
+
+## State
+
+class TreeBuilder:
+    def __init__(self):
+        self.state = None
+        self.tree = None
+
+    def set_state(self, state):
+        print(f"[TreeBuilder] Mudando para estado: {state.__class__.__name__}")
+        self.state = state
+        self.state.builder = self
+
+    def build(self):
+        return self.state.build()
+
+
+class State(ABC):
+    def __init__(self):
+        self.builder = None
+
+    @abstractmethod
+    def build(self):
+        raise NotImplementedError()
+
+
+class SplittingState(State):
+    def build(self):
+        print("[SPLITTING] Iniciando construção da árvore de triagem...")
+
+        root = DecisionNode("Dor intensa?")
+        print('[SPLITTING] Criando nó de decisão: "Dor intensa?"')
+
+        # Ramo da dor intensa - dificuldade respiratória
+        node_breath = DecisionNode("Dificuldade de respirar?")
+        print('[SPLITTING] Criando nó de decisão: "Dificuldade de respirar?"')
+        node_emerg = LeafNode("EMERGÊNCIA")
+        node_urg = LeafNode("URGÊNCIA")
+
+        root.add_child("Sim", node_breath)
+        root.add_child("Não", None)
+
+        node_breath.add_child("Sim", node_emerg)
+        node_breath.add_child("Não", node_urg)
+
+        # Ramo sem dor intensa - acidente recente?
+        node_accident = DecisionNode("Acidente recente?")
+        print('[SPLITTING] Criando nó de decisão: "Acidente recente?"')
+        node_non_urg = LeafNode("NÃO URGENTE")
+
+        # Substitui o "None" anterior (mock)
+        root.children[1] = ("Não", node_accident)
+
+        node_accident.add_child("Sim", node_urg)
+        node_accident.add_child("Não", node_non_urg)
+
+        self.builder.tree = root
+        return root
+
+
+class StoppingState(State):
+    def build(self):
+        print("[STOPPING] Nenhuma divisão adicional. Mantendo árvore atual.")
+        return self.builder.tree
+
+
+class PruningState(State):
+    def build(self):
+        print("[PRUNING] Simulando poda de ramos redundantes (mock).")
+        print("[PRUNING] Nenhuma alteração real por ser mock.")
+        return self.builder.tree
